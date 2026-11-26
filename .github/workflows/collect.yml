@@ -8,11 +8,20 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   collect:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Check out repository
@@ -26,11 +35,29 @@ jobs:
       - name: Collect Bluesky posts
         run: python collect.py --actor adamparkr.bsky.social --hours 24 --workers 5
 
-      - name: Upload results
-        if: always()
+      - name: Generate story shortlist
+        run: python make_feed.py
+
+      - name: Prepare public website
+        run: |
+          mkdir -p site
+          cp index.html feed.json site/
+
+      - name: Upload collection results
         uses: actions/upload-artifact@v4
         with:
           name: bluesky-social-radar
           path: output/
-          if-no-files-found: warn
           retention-days: 7
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload website
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+      - name: Publish website
+        id: deployment
+        uses: actions/deploy-pages@v4
