@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OSINT Social Radar</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 0 20px;
+      line-height: 1.6;
+    }
+    h1 { font-size: 32px; }
+    .story {
+      padding: 20px 0;
+      border-bottom: 1px solid #ddd;
+    }
+    a { color: #1367a3; }
+    .date { color: #666; }
+  </style>
+</head>
+<body>
+  <h1>OSINT SOCIAL RADAR</h1>
+  <p>Emerging stories from the Bluesky OSINT network.</p>
+  <p id="status">Loading latest discoveries...</p>
+  <main id="stories"></main>
+  <script>
+    async function load() {
+      try {
+        const response = await fetch(
+          'feed.json?t=' + Date.now()
+        );
+        if (!response.ok) throw new Error('No feed yet');
+        const data = await response.json();
+        document.getElementById('status').textContent =
+          'Latest update: ' + (data.updated || 'Unknown');
+        const container = document.getElementById('stories');
+        for (const item of (data.stories || [])) {
+          const section = document.createElement('section');
+          section.className = 'story';
+          const heading = document.createElement('h2');
+          heading.textContent = item.title || 'New discovery';
+          const description = document.createElement('p');
+          description.textContent = item.summary || '';
+          section.append(heading, description);
+          if (item.url && /^https:\/\/bsky\.app\//.test(item.url)) {
+            const link = document.createElement('a');
+            link.href = item.url;
+            link.textContent = 'View original post';
+            link.rel = 'noopener noreferrer';
+            section.append(link);
+          }
+          container.append(section);
+        }
+      } catch {
+        document.getElementById('status').textContent =
+          'The first automated briefing is being prepared.';
+      }
+    }
+    load();
+  </script>
+</body>
+</html>
